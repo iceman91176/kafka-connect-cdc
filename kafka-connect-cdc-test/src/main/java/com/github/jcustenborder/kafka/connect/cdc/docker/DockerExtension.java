@@ -25,7 +25,6 @@ import com.palantir.docker.compose.connection.waiting.ClusterWait;
 import org.joda.time.Duration;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
-import org.junit.jupiter.api.extension.ContainerExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
@@ -60,7 +59,7 @@ public class DockerExtension implements BeforeAllCallback, AfterAllCallback, Par
   }
 
   @Override
-  public void beforeAll(ContainerExtensionContext containerExtensionContext) throws Exception {
+  public void beforeAll(ExtensionContext containerExtensionContext) throws Exception {
     Class<?> testClass = containerExtensionContext.getTestClass().get();
     ExtensionContext.Namespace namespace = namespace(containerExtensionContext);
     DockerCompose dockerCompose = findDockerComposeAnnotation(containerExtensionContext);
@@ -86,7 +85,7 @@ public class DockerExtension implements BeforeAllCallback, AfterAllCallback, Par
   }
 
   @Override
-  public void afterAll(ContainerExtensionContext containerExtensionContext) throws Exception {
+  public void afterAll(ExtensionContext containerExtensionContext) throws Exception {
     ExtensionContext.Namespace namespace = namespace(containerExtensionContext);
     ExtensionContext.Store store = containerExtensionContext.getStore(namespace);
     DockerComposeRule dockerComposeRule = store.get(STORE_SLOT_RULE, DockerComposeRule.class);
@@ -94,7 +93,7 @@ public class DockerExtension implements BeforeAllCallback, AfterAllCallback, Par
   }
 
   @Override
-  public boolean supports(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
+  public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
     return
         parameterContext.getParameter().isAnnotationPresent(DockerFormatString.class) ||
             parameterContext.getParameter().isAnnotationPresent(DockerContainer.class) ||
@@ -103,7 +102,7 @@ public class DockerExtension implements BeforeAllCallback, AfterAllCallback, Par
   }
 
   @Override
-  public Object resolve(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
+  public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
     ExtensionContext.Namespace namespace = namespace(extensionContext);
     ExtensionContext.Store store = extensionContext.getStore(namespace);
     Object result = null;
@@ -157,4 +156,5 @@ public class DockerExtension implements BeforeAllCallback, AfterAllCallback, Par
     DockerPort dockerPort = container.port(dockerFormatString.port());
     return dockerPort.inFormat(dockerFormatString.format());
   }
+
 }
