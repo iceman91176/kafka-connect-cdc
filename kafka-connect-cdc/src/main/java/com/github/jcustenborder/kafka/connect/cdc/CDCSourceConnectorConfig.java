@@ -51,6 +51,9 @@ public class CDCSourceConnectorConfig extends AbstractConfig {
   public static final String SCHEMA_CASE_FORMAT_TABLE_NAMES_CONFIG = SCHEMA_CASE_FORMAT + ".table.name";
   public static final String SCHEMA_CASE_FORMAT_COLUMN_NAMES_CONFIG = SCHEMA_CASE_FORMAT + ".column.name";
   public static final String SCHEMA_CASE_FORMAT_INPUT_CONFIG = SCHEMA_CASE_FORMAT + ".input";
+  public static final String UNCOMITTED_RECORD_MAX_CONFIG = "uncomitted.record.max";
+  public static final String UNCOMITTED_RECORD_TIMEOUT_CONFIG = "uncomitted.record.timeout.ms";
+
 
   static final String FORMATTED_SETTINGS = "`" + Joiner.on("`, `").join(NAMESPACE_CONFIG, KEY_NAME_FORMAT_CONFIG, VALUE_NAME_FORMAT_CONFIG, TOPIC_FORMAT_CONFIG) + "`";
   static final String SCHEMA_CASE_FORMAT_INPUT_DOC = "The naming convention used by the database format. " +
@@ -69,6 +72,11 @@ public class CDCSourceConnectorConfig extends AbstractConfig {
       "table name of `USER_SETTING` to a more java like case of `UserSetting` or all lowercase `usersetting`.";
   static final String SCHEMA_CASE_FORMAT_COLUMN_NAMES_DOC = "This setting is used to control how the column names are " +
       "cased when the resulting schemas are generated.";
+  static final String UNCOMITTED_RECORD_MAX_DOC = "The maximum number of records to allow in the deque. " +
+      "Once this limit is reached the record deque will block to prevent running out of memory.";
+  static final String UNCOMITTED_RECORD_TIMEOUT_DOC = "The maximum amount of time to wait when " +
+      "writing to the deque before throwing a timeout exception.";
+
   public final String namespace;
   public final String topicFormat;
   public final String keyNameFormat;
@@ -76,6 +84,8 @@ public class CDCSourceConnectorConfig extends AbstractConfig {
   public final int batchSize;
   public final int backoffTimeMs;
   public final int schemaCacheMs;
+  public final int uncommittedRecordMax;
+  public final long uncommittedRecordTimeout;
 
   public final CaseFormat schemaInputFormat;
   public final CaseFormat schemaDatabaseNameFormat;
@@ -92,6 +102,8 @@ public class CDCSourceConnectorConfig extends AbstractConfig {
     this.backoffTimeMs = this.getInt(BACKOFF_TIME_MS_CONFIG);
     this.schemaCacheMs = this.getInt(SCHEMA_CACHE_MS_CONFIG);
     this.topicFormat = this.getString(TOPIC_FORMAT_CONFIG);
+    this.uncommittedRecordMax = getInt(UNCOMITTED_RECORD_MAX_CONFIG);
+    this.uncommittedRecordTimeout = getLong(UNCOMITTED_RECORD_TIMEOUT_CONFIG);
 
     this.schemaInputFormat = ConfigUtils.getEnum(CaseFormat.class, this, SCHEMA_CASE_FORMAT_INPUT_CONFIG);
     this.schemaDatabaseNameFormat = ConfigUtils.getEnum(CaseFormat.class, this, SCHEMA_CASE_FORMAT_DATABASE_NAMES_CONFIG);
@@ -105,13 +117,14 @@ public class CDCSourceConnectorConfig extends AbstractConfig {
         .define(TOPIC_FORMAT_CONFIG, Type.STRING, "${databaseName}.${tableName}", Importance.HIGH, TOPIC_FORMAT_DOC)
         .define(NAMESPACE_CONFIG, Type.STRING, "com.example.data.${databaseName}", Importance.HIGH, NAMESPACE_DOC)
 
-
         .define(KEY_NAME_FORMAT_CONFIG, Type.STRING, "${namespace}.${tableName}Key", Importance.HIGH, KEY_NAME_FORMAT_DOC)
         .define(VALUE_NAME_FORMAT_CONFIG, Type.STRING, "${namespace}.${tableName}Value", Importance.HIGH, VALUE_NAME_FORMAT_DOC)
         .define(BATCH_SIZE_CONFIG, Type.INT, 512, Range.atLeast(1), Importance.LOW, BATCH_SIZE_DOC)
 
         .define(BACKOFF_TIME_MS_CONFIG, Type.INT, 1000, Range.atLeast(50), Importance.LOW, BACKOFF_TIME_MS_DOC)
         .define(SCHEMA_CACHE_MS_CONFIG, Type.INT, 5 * 60 * 1000, Range.atLeast(60000), Importance.LOW, SCHEMA_CACHE_MS_DOC)
+        .define(UNCOMITTED_RECORD_MAX_CONFIG, Type.INT, 50000, Range.atLeast(100), Importance.LOW, UNCOMITTED_RECORD_MAX_DOC)
+        .define(UNCOMITTED_RECORD_TIMEOUT_CONFIG, Type.LONG, 5L * 60L * 1000L, Range.atLeast(100), Importance.LOW, UNCOMITTED_RECORD_TIMEOUT_DOC)
 
         .define(SCHEMA_CASE_FORMAT_INPUT_CONFIG, Type.STRING, CaseFormat.UPPER_UNDERSCORE.toString(), ValidEnum.of(CaseFormat.class, CaseFormat.LOWER.toString(), CaseFormat.UPPER.toString(), CaseFormat.NONE.toString()), Importance.LOW, SCHEMA_CASE_FORMAT_INPUT_DOC)
         .define(SCHEMA_CASE_FORMAT_DATABASE_NAMES_CONFIG, Type.STRING, CaseFormat.NONE.name(), ValidEnum.of(CaseFormat.class), Importance.LOW, SCHEMA_CASE_FORMAT_DATABASE_NAMES_DOC)

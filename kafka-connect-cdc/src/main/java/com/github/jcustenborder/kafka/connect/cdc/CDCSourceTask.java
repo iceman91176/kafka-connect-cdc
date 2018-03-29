@@ -15,7 +15,8 @@
  */
 package com.github.jcustenborder.kafka.connect.cdc;
 
-import com.github.jcustenborder.kafka.connect.utils.data.SourceRecordConcurrentLinkedDeque;
+import com.github.jcustenborder.kafka.connect.utils.data.SourceRecordDeque;
+import com.github.jcustenborder.kafka.connect.utils.data.SourceRecordDequeBuilder;
 import com.google.common.base.Preconditions;
 import org.apache.kafka.common.utils.SystemTime;
 import org.apache.kafka.common.utils.Time;
@@ -37,7 +38,7 @@ public abstract class CDCSourceTask<CONF extends CDCSourceConnectorConfig> exten
   protected CONF config;
   protected Time time = new SystemTime();
   SchemaGenerator schemaGenerator;
-  private SourceRecordConcurrentLinkedDeque changes;
+  private SourceRecordDeque changes;
 
   protected abstract CONF getConfig(Map<String, String> map);
 
@@ -122,7 +123,10 @@ public abstract class CDCSourceTask<CONF extends CDCSourceConnectorConfig> exten
   @Override
   public void start(Map<String, String> map) {
     this.config = getConfig(map);
-    this.changes = new SourceRecordConcurrentLinkedDeque(this.config.batchSize, this.config.backoffTimeMs);
+    this.changes = SourceRecordDequeBuilder.of()
+        .batchSize(this.config.batchSize)
+        .emptyWaitMs(this.config.backoffTimeMs)
+        .build();
     this.schemaGenerator = new SchemaGenerator(this.config);
   }
 
