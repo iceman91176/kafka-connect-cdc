@@ -271,11 +271,13 @@ class SchemaGenerator {
     Preconditions.checkNotNull(change.metadata(), "change.metadata() cannot be null.");
 
     ChangeKey changeKey = new ChangeKey(change);
+    return generateSchemas(change);
+    /*
     try {
       return this.schemaPairCache.get(changeKey, () -> generateSchemas(change));
     } catch (ExecutionException e) {
       throw new DataException("Exception thrown while building schemas.", e);
-    }
+    }*/
   }
 
   public String topic(final Change change) {
